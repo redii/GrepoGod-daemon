@@ -1,0 +1,27 @@
+{
+  "name": "grepogod-daemon",
+  "version": "1.0.0",
+  "description": "",
+  "main": "daemon.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/redii/GrepoGod-daemon.git"
+  },
+  "keywords": [
+    "grepolis"
+  ],
+  "author": "Henry Akmann",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/redii/GrepoGod-daemon/issues"
+  },
+  "homepage": "https://github.com/redii/GrepoGod-daemon#readme",
+  "dependencies": {
+    "got": "^8.3.0",
+    "lodash": "^4.17.5",
+    "mongoose": "^5.0.11"
+  }
+}
