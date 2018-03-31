@@ -22,7 +22,7 @@ if ((Date.now() - schedule.lasttime) < 3900000) {
   console.log(Date.now() - schedule.lasttime)
 }
 
-every('65m').do(() => {                                                                               // Every 65 Minutes run the script...
+every('10s').do(() => {                                                                               // Every 65 Minutes run the script...
 
   schedule.lasttime = Date.now()                                                                      // Set lasttime parameter to current time
   schedule.counter  = schedule.counter + 1                                                            // increase counter with every runthrough
@@ -59,7 +59,7 @@ every('65m').do(() => {                                                         
 
         var newPlayer = createPlayerObject(player.ID, data, activity)                                 // Create newPlayer object with api data and activity object
 
-        Player.findOneAndUpdate({ id: player.ID }, newPlayer, { upsert: true }, (err) => {            // Save new player object to database
+        Player.findOneAndUpdate({ playerid: player.ID }, newPlayer, { upsert: true }, (err) => {            // Save new player object to database
           if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR FROM FINDONEANDUPDATE() INSIDE CATCH()`, err) }
         })
       })
@@ -112,6 +112,7 @@ async function reqAPI(world) {
 }
 
 // checkActivity function CURRENTLY FAILING
+// ===========================================
 function checkActivity(player, data) {
   var activity = {                                                           // Initialize activity variable
     points: 0,
