@@ -2,14 +2,17 @@ var mongoose = require('mongoose')
 
 var Schema = mongoose.Schema
 var schema = new Schema({     // Mongoose ORM Schema
-  id: Number,
+  playerid: Number,
   name: String,
   allianceid: Number,
   points: Number,
   rank: Number,
   towns: Number,
   killsall: Number,
-  activity: Number
+  killsoff: Number,
+  killsdef: Number,
+  activity: Number,
+  killsoff_activity: Number
 })
 
 module.exports = {schema}
