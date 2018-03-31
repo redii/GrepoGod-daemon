@@ -4,5 +4,5 @@
   "dbport": "27017",
   "dbname": "your_db_name",
   "interval": "3900",
-  "worlds": ["de88", "de89"]
+  "worlds": [ "de7", "de28", "de34", "de40", "de69", "de70", "de73", "de77", "de78", "de79", "de80", "de81", "de82", "de83", "de84", "de85", "de86", "de87", "de88", "de89", "de90", "de91", "de92", "de93" ]
 }

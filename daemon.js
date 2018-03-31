@@ -22,7 +22,7 @@ if ((Date.now() - schedule.lasttime) < 3900000) {
   console.log(Date.now() - schedule.lasttime)
 }
 
-every('10s').do(() => {                                                                               // Every 65 Minutes run the script...
+every('65m').do(() => {                                                                               // Every 65 Minutes run the script...
 
   schedule.lasttime = Date.now()                                                                      // Set lasttime parameter to current time
   schedule.counter  = schedule.counter + 1                                                            // increase counter with every runthrough
