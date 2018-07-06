@@ -25,24 +25,24 @@ console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] Specified worlds: ${c.worlds}
 // ===================================
 // STARTING / SCHEDULING CODE
 // ===================================
-// if ((Date.now() - schedule.lasttime) < 3600000) {                                                       // If last loop was less than a hour ago...
-//   var timeout = 3600000 - (Date.now() - schedule.lasttime)                                              // Get difference between last timestamp and current date in ms
-//   console.log(`Waiting ${Number((timeout/60/1000).toFixed(2))} minutes for scheduling`)                 // Logging with formatted number to minutes and 2 comma values
-//   setTimeout(daemon, timeout)                                                                           // Wait time in ms then execute daemon
-// } else {                                                                                                // Else...
-//   console.log(`Last loop was ${Number(((Date.now() - schedule.lasttime)/60/1000).toFixed(2))} minutes ago.`)   // Logging with formatted number to minutes and 2 comma values
-//   schedule.counter = 0                                                                                  // Clear schedule couter
-//   console.log('Counters has been cleared')
-//   console.log('Think about dropping database for new data... Daemon will start in 30 seconds')
-//   setTimeout(daemon, 30000)                                                                             // and execute daemon after 1 minute
-// }
-daemon()
+if ((Date.now() - schedule.lasttime) < 3600000) {                                                       // If last loop was less than a hour ago...
+  var timeout = 3600000 - (Date.now() - schedule.lasttime)                                              // Get difference between last timestamp and current date in ms
+  console.log(`Waiting ${Number((timeout/60/1000).toFixed(2))} minutes for scheduling`)                 // Logging with formatted number to minutes and 2 comma values
+  setTimeout(daemon, timeout)                                                                           // Wait time in ms then execute daemon
+} else {                                                                                                // Else...
+  console.log(`Last loop was ${Number(((Date.now() - schedule.lasttime)/60/1000).toFixed(2))} minutes ago.`)   // Logging with formatted number to minutes and 2 comma values
+  schedule.counter = 0                                                                                  // Clear schedule couter
+  console.log('Counters has been cleared')
+  console.log('Think about dropping database for new data... Daemon will start in 30 seconds')
+  setTimeout(daemon, 30000)                                                                             // and execute daemon after 1 minute
+}
+// daemon()   // for development
 
 // ===================================
 // DAEMON CODE
 // ===================================
 function daemon() {
-  // every('60m').do(() => {                                                                               // Every 65 Minutes run the script...
+  every('60m').do(() => {                                                                               // Every 65 Minutes run the script...
     schedule.lasttime = Date.now()                                                                      // Set lasttime parameter to current time
     fs.writeFileSync('schedule.json', JSON.stringify(schedule))                                         // save schedule object to file
     console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] Repetitions ${schedule.counter}`)                // Logging repetitions
@@ -101,7 +101,7 @@ function daemon() {
 
       schedule.counter  = schedule.counter + 1                                                          // increase counter with every loop                                                       // increase alliance counter with every runthrough
    })
-  // })   // every()
+  })   // every()
 }
 
 // ===========================================================================
