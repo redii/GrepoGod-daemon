@@ -15,7 +15,7 @@ var   schedule          = require('./schedule.json')          // Savefile for sc
 // ===================================
 // INITIAL LOGGING
 // ===================================
-console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] Daemon started`)
+console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] GrepoGod Daemon started`)
 console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] Specified worlds: ${c.worlds}`)
 
 // ===========================================================================
@@ -23,79 +23,86 @@ console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] Specified worlds: ${c.worlds}
 // ===========================================================================
 
 // ===================================
-// STARTING CODE
+// STARTING / SCHEDULING CODE
 // ===================================
-if ((Date.now() - schedule.lasttime) < 3900000) {
-  // console.log(Date.now() - schedule.lasttime)
-  // wait()
-} else {
-  schedule.counter = 0
-}
+// if ((Date.now() - schedule.lasttime) < 3600000) {                                                       // If last loop was less than a hour ago...
+//   var timeout = 3600000 - (Date.now() - schedule.lasttime)                                              // Get difference between last timestamp and current date in ms
+//   console.log(`Waiting ${Number((timeout/60/1000).toFixed(2))} minutes for scheduling`)                 // Logging with formatted number to minutes and 2 comma values
+//   setTimeout(daemon, timeout)                                                                           // Wait time in ms then execute daemon
+// } else {                                                                                                // Else...
+//   console.log(`Last loop was ${Number(((Date.now() - schedule.lasttime)/60/1000).toFixed(2))} minutes ago.`)   // Logging with formatted number to minutes and 2 comma values
+//   schedule.counter = 0                                                                                  // Clear schedule couter
+//   console.log('Counters has been cleared')
+//   console.log('Think about dropping database for new data... Daemon will start in 30 seconds')
+//   setTimeout(daemon, 30000)                                                                             // and execute daemon after 1 minute
+// }
+daemon()
 
 // ===================================
 // DAEMON CODE
 // ===================================
-every('60m').do(() => {                                                                               // Every 65 Minutes run the script...
-  schedule.lasttime = Date.now()                                                                      // Set lasttime parameter to current time
-  fs.writeFileSync('schedule.json', JSON.stringify(schedule))                                         // save schedule object to file
-  console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] Repetitions ${schedule.counter}`)                // Logging repetitions
+function daemon() {
+  // every('60m').do(() => {                                                                               // Every 65 Minutes run the script...
+    schedule.lasttime = Date.now()                                                                      // Set lasttime parameter to current time
+    fs.writeFileSync('schedule.json', JSON.stringify(schedule))                                         // save schedule object to file
+    console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] Repetitions ${schedule.counter}`)                // Logging repetitions
 
-  _.forEach(c.worlds, async function (world) {                                                        // For each specified world in config.json ...
-    var data = await reqAPI(world)                                                                    // ... request latest world data from api ...
-    var Player = mongoose.model(world, playerSchema)                                                  // ... and set the world specific collection in which the data should get stored
-    var Alliance = mongoose.model(`${world}_alliances`, allianceSchema)                               // ... and set the world specific collection in which the data should get stored
+    _.forEach(c.worlds, async function (world) {                                                        // For each specified world in config.json ...
+      var data = await reqAPI(world)                                                                    // ... request latest world data from api ...
+      var Player = mongoose.model(world, playerSchema)                                                  // ... and set the world specific collection in which the data should get stored
+      var Alliance = mongoose.model(`${world}_alliances`, allianceSchema)                               // ... and set the world specific collection in which the data should get stored
 
-    // ===================================
-    // FOREACH LOOP PLAYER
-    // ===================================
-    _.forEach(data.players, function (player) {                                                       // For each player in (API) data.players ...
-      Player.findOne({ playerid: player.ID }).then((result) => {                                      // ... find player in database to get object to work with...
+      // ===================================
+      // FOREACH LOOP PLAYER
+      // ===================================
+      _.forEach(data.players, function (player) {                                                       // For each player in API data.players ...
+        Player.findOne({ playerid: player.ID }).then((result) => {                                      // ... find player in database to get object to work with...
 
-        var activity = { points: 0, killsoff: 0 }                                                     // Initialize activity objects
-        if (result.points == data.players[player.ID].points) {                                        // Check player points activity
-          // if points = 0 { delete player from db }
-          activity.points = result.activity + 1
-        }
-        if (result.killsoff == data.playerkillsoff[player.ID].points) {                               // Check killsoff activity
-          activity.killsoff = result.killsoff_activity + 1                                            // Set activity according
-        }
+          var activity = { points: 0, killsoff: 0 }                                                     // Initialize activity objects
+          if (result.points == data.players[player.ID].points) {                                        // Check player points activity
+            activity.points = result.activity + 1
+          }
+          if (result.killsoff == data.playerkillsoff[player.ID].points) {                               // Check killsoff activity
+            activity.killsoff = result.killsoff_activity + 1                                            // Set activity according
+          }
 
-        // console.log(result)
-        var newPlayer = createPlayerObject(player.ID, data, activity, false)                          // Create newPlayer object with api data and activity object (false for updating)
-        Player.findOneAndUpdate({ playerid: player.ID }, newPlayer, { upsert: true }, (err) => {      // Find and update player object
-          if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR PLAYERS findOneAndUpdate()`) }
-        })
-      }).catch((err) => {                                                                             // If player cant be found in database ...
-        //console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR findOne() Player doesnt exist`)
-        var activity = { points: 0, killsoff: 0 }                                                     // Initialize activity objects to 0
-        var newPlayer = createPlayerObject(player.ID, data, activity, true)                           // Create newPlayer object with api data and activity object (true for new object)
+          // console.log(result)
+          var newPlayer = createPlayerObject(player.ID, data, activity, false)                          // Create newPlayer object with api data and activity object (false for updating)
+          Player.findOneAndUpdate({ playerid: player.ID }, newPlayer, { upsert: true }, (err) => {      // Find and update player object
+            if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR PLAYERS findOneAndUpdate()`) }
+          })
+        }).catch((err) => {                                                                             // If player cant be found in database ...
+          //console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR findOne() Player doesnt exist`)
+          var activity = { points: 0, killsoff: 0 }                                                     // Initialize activity objects to 0
+          var newPlayer = createPlayerObject(player.ID, data, activity, true)                           // Create newPlayer object with api data and activity object (true for new object)
 
-        Player.findOneAndUpdate({ playerid: player.ID }, newPlayer, { upsert: true }, (err) => {            // Save new player object to database
-          if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR PLAYERS findOneAndUpdate() inside catch()`, err) }
-        })
-      })
-    })
-
-    _.forEach(data.alliances, function (alliance) {
-      Alliance.findOne({ allianceid: alliance.ID }).then((result) => {                                      // ... find player in database to get object to work with...
-        var newAlliance = createAllianceObject(alliance.ID, data)                                           // Create newPlayer object with api data and activity object
-        Alliance.findOneAndUpdate({ allianceid: alliance.ID }, newAlliance, { upsert: true }, (err) => {    // Find and update player object
-          if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR ALLIANCES findOneAndUpdate()`) }
-        })
-
-      }).catch((err) => {                                                                                   // If player cant be found in database ...
-        //console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR findOne() Alliance doesnt exist`)
-        var newAlliance = createAllianceObject(alliance.ID, data)                                           // Create newPlayer object with api data and activity object
-
-        Alliance.findOneAndUpdate({ allianceid: alliance.ID }, newAlliance, { upsert: true }, (err) => {    // Save new player object to database
-          if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR ALLIANCES findOneAndUpdate() inside catch()`, err) }
+          Player.findOneAndUpdate({ playerid: player.ID }, newPlayer, { upsert: true }, (err) => {      // Save new player object to database
+            if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR PLAYERS findOneAndUpdate() inside catch()`, err) }
+          })
         })
       })
-    })
 
-    schedule.counter  = schedule.counter + 1                                                          // increase counter with every runthrough                                                        // increase alliance counter with every runthrough
- })
-})
+      _.forEach(data.alliances, function (alliance) {                                                         // For each alliance in API data.alliances ...
+        Alliance.findOne({ allianceid: alliance.ID }).then((result) => {                                      // ... find player in database to get object to work with...
+          var newAlliance = createAllianceObject(alliance.ID, data)                                           // Create newPlayer object with api data and activity object
+          Alliance.findOneAndUpdate({ allianceid: alliance.ID }, newAlliance, { upsert: true }, (err) => {    // Find and update player object
+            if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR ALLIANCES findOneAndUpdate()`) }
+          })
+
+        }).catch((err) => {                                                                                   // If player cant be found in database ...
+          //console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR findOne() Alliance doesnt exist`)
+          var newAlliance = createAllianceObject(alliance.ID, data)                                           // Create newPlayer object with api data and activity object
+
+          Alliance.findOneAndUpdate({ allianceid: alliance.ID }, newAlliance, { upsert: true }, (err) => {    // Save new player object to database
+            if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR ALLIANCES findOneAndUpdate() inside catch()`, err) }
+          })
+        })
+      })
+
+      schedule.counter  = schedule.counter + 1                                                          // increase counter with every loop                                                       // increase alliance counter with every runthrough
+   })
+  // })   // every()
+}
 
 // ===========================================================================
 // ============================== SUBFUNCTIONS ===============================
