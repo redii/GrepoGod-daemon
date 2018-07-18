@@ -5,7 +5,6 @@ const _                 = require('lodash')                   // for common meth
 const got               = require('got')                      // for http requests
 const timestamp         = require('time-stamp')               // for simple timestamp usage
 const fs                = require('fs')                       // for filesystem actions
-const god               = require('./god.js')                 // contains the main daemon code / run()
 const c                 = require('./config.json')            // contains credentials, worlds array etc.
 const {mongoose}        = require('./db/mongoose.js')         // for mongodb connection
 const {playerSchema}    = require('./db/models/player.js')    // contains the mongoose orm model for "Player"
@@ -19,27 +18,23 @@ exports.run = async function (world) {                                          
   var data = await reqAPI(world)                                                                    // ... request latest world data from api ...
   var Player = mongoose.model(world, playerSchema)                                                  // ... and set the world specific collection in which the data should get stored
   var Alliance = mongoose.model(`${world}_alliances`, allianceSchema)                               // ... and set the world specific collection in which the data should get stored
-  schedule.timestamp[world]  = Date.now()                                                           // set timestamp for current world
+  schedule.timestamp[world] = Date.now()                                                            // set timestamp for current world
 
   // ===================================
   // FOREACH PLAYER LOOP
   // ===================================
-  _.forEach(data.players, function (apiPlayer) {                                                    // For each player in API data.players ...
-    Player.findOne({ playerid: apiPlayer.ID }).then((dbPlayer) => {                                 // ... find player in database to get object to work with...
-
-      var activity  = checkActivity(apiPlayer.ID, dbPlayer, data)                                   // Check activity of current player
-      var newPlayer = createPlayerObject(apiPlayer.ID, activity, 'update', data)                    // Create newPlayer object with api data and activity object (false for updating)
-
-      Player.findOneAndUpdate({ playerid: apiPlayer.ID }, newPlayer, { upsert: true }, (err) => {   // Find and update player object
+  _.forEach(data.players, function (player) {                                                       // For each player in API data.players ...
+    Player.findOne({ playerid: player.ID }).then((result) => {                                      // ... find player in database to get object to work with...
+      var activity  = checkActivity(player.ID, result, data)                                        // Check activity of current player
+      var newPlayer = createPlayerObject(player.ID, activity, 'update', data)                       // Create newPlayer object with api data and activity object (false for updating)
+      Player.findOneAndUpdate({ playerid: player.ID }, newPlayer, { upsert: true }, (err) => {      // Find and update player object
         if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR Can't update player object`) }
       })
-
     }).catch((err) => {                                                                             // If player doesnt exist yet ...
       //console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR findOne() Player doesnt exist yet`)
       var activity = { points: 0, killsoff: 0 }                                                     // Initialize activity objects to 0
-      var newPlayer = createPlayerObject(apiPlayer.ID, activity, 'new', data)                       // Create newPlayer object with api data and activity object (true for new object)
-
-      Player.findOneAndUpdate({ playerid: apiPlayer.ID }, newPlayer, { upsert: true }, (err) => {   // Save new player object to database
+      var newPlayer = createPlayerObject(player.ID, activity, 'new', data)                          // Create newPlayer object with api data and activity object (true for new object)
+      Player.findOneAndUpdate({ playerid: player.ID }, newPlayer, { upsert: true }, (err) => {      // Save new player object to database
         if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR Can't add player object to database`, err) }
       })
     })
@@ -49,16 +44,14 @@ exports.run = async function (world) {                                          
   // FOREACH ALLIANCE LOOP
   // ===================================
   _.forEach(data.alliances, function (alliance) {                                                         // For each alliance in API data.alliances ...
-    Alliance.findOne({ allianceid: alliance.ID }).then((dbAlliance) => {                                  // ... find player in database to get object to work with...
+    Alliance.findOne({ allianceid: alliance.ID }).then((result) => {                                      // ... find player in database to get object to work with...
       var newAlliance = createAllianceObject(alliance.ID, data)                                           // Create newPlayer object with api data and activity object
       Alliance.findOneAndUpdate({ allianceid: alliance.ID }, newAlliance, { upsert: true }, (err) => {    // Find and update player object
         if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR Can't update alliance object`) }
       })
-
     }).catch((err) => {                                                                                   // If player cant be found in database ...
       //console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR findOne() Alliance doesnt exist yet`)
       var newAlliance = createAllianceObject(alliance.ID, data)                                           // Create newPlayer object with api data and activity object
-
       Alliance.findOneAndUpdate({ allianceid: alliance.ID }, newAlliance, { upsert: true }, (err) => {    // Save new player object to database
         if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR Can't add alliance object to database`, err) }
       })
@@ -138,7 +131,7 @@ function checkActivity(playerid, old, data) {
 // ===========================================
 function createPlayerObject(playerid, activity, mode, data) {
 
-  var alliance = _.find(data.alliances, { 'ID': data.players[playerid].allianceID})
+  var alliance = _.find(data.alliances, {'ID': data.players[playerid].allianceID})
 
   if(alliance) {
     var alliancename = alliance.name
@@ -175,27 +168,27 @@ function createPlayerObject(playerid, activity, mode, data) {
         $push:             {
                              points: {
                                $each: [data.players[playerid].points],
-                               $slice: c.arrayLimit
+                               $slice: -c.arrayLimit
                              },
                              rank: {
                                $each: [data.players[playerid].rank],
-                               $slice: c.arrayLimit
+                               $slice: -c.arrayLimit
                              },
                              towns: {
                                $each: [data.players[playerid].towns],
-                               $slice: c.arrayLimit
+                               $slice: -c.arrayLimit
                              },
                              killsall: {
                                $each: [data.playerkillsall[playerid].points],
-                               $slice: c.arrayLimit
+                               $slice: -c.arrayLimit
                              },
                              killsoff: {
                                $each: [data.playerkillsoff[playerid].points],
-                               $slice: c.arrayLimit
+                               $slice: -c.arrayLimit
                              },
                              killsdef: {
                                $each: [data.playerkillsdef[playerid].points],
-                               $slice: c.arrayLimit
+                               $slice: -c.arrayLimit
                              }
                            },
         killsall_rank:     data.playerkillsall[playerid].rank,

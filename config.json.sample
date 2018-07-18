@@ -1,5 +1,6 @@
 {
   "api": "domain_or_ip",
   "mongodburi": "mongodb://",
-  "worlds": [ "de40", "de69", "de70", "de77", "de78", "de79", "de80", "de81", "de82", "de83", "de84", "de85", "de86", "de87", "de88", "de89", "de90", "de91", "de92", "de93" ]
+  "worlds": [ "de40", "de69", "de70", "de77", "de78", "de79", "de80", "de81", "de82", "de83", "de84", "de85", "de86", "de87", "de88", "de89", "de90", "de91", "de92", "de93" ],
+  "arrayLimit":168
 }
