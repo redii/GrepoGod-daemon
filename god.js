@@ -18,19 +18,25 @@ exports.run = async function (world) {                                          
   var data = await reqAPI(world)                                                                    // ... request latest world data from api ...
   var Player = mongoose.model(world, playerSchema)                                                  // ... and set the world specific collection in which the data should get stored
   var Alliance = mongoose.model(`${world}_alliances`, allianceSchema)                               // ... and set the world specific collection in which the data should get stored
-  schedule.timestamp[world] = Date.now()                                                            // set timestamp for current world
+  schedule.timestamp[world]  = Date.now()                                                           // set timestamp for current world
 
   // ===================================
   // FOREACH PLAYER LOOP
   // ===================================
   _.forEach(data.players, function (player) {                                                       // For each player in API data.players ...
     Player.findOne({ playerid: player.ID }).then((result) => {                                      // ... find player in database to get object to work with...
-      var activity  = checkActivity(player.ID, result, data)                                        // Check activity of current player
+      var activity = { points: 0, killsoff: 0 }                                                     // Initialize activity objects
+      if (result.points == data.players[player.ID].points) {                                        // Check player points activity
+        activity.points = result.activity + 1                                                       // Set activity according
+      }
+      if (result.killsoff == data.playerkillsoff[player.ID].points) {                               // Check killsoff activity
+        activity.killsoff = result.killsoff_activity + 1                                            // Set activity according
+      }
       var newPlayer = createPlayerObject(player.ID, activity, 'update', data)                       // Create newPlayer object with api data and activity object (false for updating)
       Player.findOneAndUpdate({ playerid: player.ID }, newPlayer, { upsert: true }, (err) => {      // Find and update player object
         if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR Can't update player object`) }
       })
-    }).catch((err) => {                                                                             // If player doesnt exist yet ...
+    }).catch((err) => {                                                                             // If player cant be found in database ...
       //console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR findOne() Player doesnt exist yet`)
       var activity = { points: 0, killsoff: 0 }                                                     // Initialize activity objects to 0
       var newPlayer = createPlayerObject(player.ID, activity, 'new', data)                          // Create newPlayer object with api data and activity object (true for new object)
@@ -57,7 +63,6 @@ exports.run = async function (world) {                                          
       })
     })
   })
-
   schedule.counter[world]  = schedule.counter[world]                                                      // increase counter with every loop
   fs.writeFileSync('schedule.json', JSON.stringify(schedule))                                             // save schedule object to file
   return
@@ -110,20 +115,6 @@ async function reqAPI(world) {
   }
   console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ${world} API Requests successful`)
   return res                                                      // Return response object
-}
-
-// ===========================================
-// checkActivity function
-// ===========================================
-function checkActivity(playerid, old, data) {
-  var res = { points: 0, killsoff: 0 }                                                     // Initialize activity objects
-  if (old.points == data.players[playerid].points) {                                            // Check player points activity
-    activity.points = old.activity + 1                                                          // Set activity according
-  }
-  if (old.killsoff == data.playerkillsoff[playerid].points) {                                   // Check killsoff activity
-    activity.killsoff = old.killsoff_activity + 1                                               // Set activity according
-  }
-  return res
 }
 
 // ===========================================
