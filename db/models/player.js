@@ -1,6 +1,6 @@
 var mongoose = require('mongoose')
-
 var Schema = mongoose.Schema
+
 var playerSchema = new Schema({     // Mongoose ORM Schema
   playerid: Number,
   name: String,
