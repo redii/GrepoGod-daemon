@@ -27,19 +27,17 @@ exports.run = async function (world) {                                          
     Player.findOne({ playerid: player.ID }).then((result) => {                                      // ... find player in database to get object to work with...
       var activity = { points: 0, killsoff: 0 }                                                     // Initialize activity objects
       if (result.points == data.players[player.ID].points) {                                        // Check player points activity
-        activity.points = result.activity + 1                                                       // Set activity according
-      }
+        activity.points = result.activity + 1 }                                                     // Set activity according
       if (result.killsoff == data.playerkillsoff[player.ID].points) {                               // Check killsoff activity
-        activity.killsoff = result.killsoff_activity + 1                                            // Set activity according
-      }
-      var newPlayer = createPlayerObject(player.ID, activity, 'update', data)                       // Create newPlayer object with api data and activity object (false for updating)
+        activity.killsoff = result.killsoff_activity + 1 }                                          // Set activity according
+      var newPlayer = createPlayerObject(player.ID, activity, data, 'update')                       // Create newPlayer object with api data and activity object (false for updating)
       Player.findOneAndUpdate({ playerid: player.ID }, newPlayer, { upsert: true }, (err) => {      // Find and update player object
         if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR Can't update player object`) }
       })
     }).catch((err) => {                                                                             // If player cant be found in database ...
       //console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR findOne() Player doesnt exist yet`)
       var activity = { points: 0, killsoff: 0 }                                                     // Initialize activity objects to 0
-      var newPlayer = createPlayerObject(player.ID, activity, 'new', data)                          // Create newPlayer object with api data and activity object (true for new object)
+      var newPlayer = createPlayerObject(player.ID, activity, data, 'new', data)                          // Create newPlayer object with api data and activity object (true for new object)
       Player.findOneAndUpdate({ playerid: player.ID }, newPlayer, { upsert: true }, (err) => {      // Save new player object to database
         if (err) { console.log(`[${timestamp('DD.MM.YYYY-HH:mm:ss')}] ERROR Can't add player object to database`, err) }
       })
@@ -63,9 +61,13 @@ exports.run = async function (world) {                                          
       })
     })
   })
-  schedule.counter[world]  = schedule.counter[world]                                                      // increase counter with every loop
+
+  if (schedule.counter[world]) {																		                                      // if schedule counter was already set...
+	schedule.counter[world] = schedule.counter[world] + 1                                                   // increase counter with loop
+  } else {																								                                                // for new worlds...
+	schedule.counter[world] = 1	} 																		                                      // set counter to 1
   fs.writeFileSync('schedule.json', JSON.stringify(schedule))                                             // save schedule object to file
-  return
+  return																								                                                  // return (function currently doesnt stop in dev)
 }
 
 // ===========================================================================
@@ -120,7 +122,7 @@ async function reqAPI(world) {
 // ===========================================
 // createPlayerObject function
 // ===========================================
-function createPlayerObject(playerid, activity, mode, data) {
+function createPlayerObject(playerid, activity, data, mode) {
 
   var alliance = _.find(data.alliances, {'ID': data.players[playerid].allianceID})
 
